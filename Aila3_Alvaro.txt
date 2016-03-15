@@ -1,0 +1,142 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Data.SqlClient;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace AdoNetLab
+{
+    public partial class Form1 : Form
+    {
+        private SqlConnection conexao;
+        
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void btnCon_Click(object sender, EventArgs e)
+        {
+            if (conexao == null)
+            {
+                conexao = new SqlConnection(txbStrCon.Text);
+                conexao.Open();
+
+                btnCon.Text = "&Desconectar";
+                txbStrCon.Enabled = false;
+                tbcGeral.Enabled = true;
+            }
+            else
+            {
+                conexao.Close();
+                conexao = null;
+
+                btnCon.Text = "&Conectar";
+                txbStrCon.Enabled = true;
+                tbcGeral.Enabled = false;
+            }
+        }
+
+        private void btnInserir_Click(object sender, EventArgs e)
+        {
+            int usuario = Convert.ToInt32(nudUsuarioID.Value);
+            DateTime dataAcesso = dtpDataAcesso.Value;
+
+            String sql = "INSERT INTO AcessoUsuario VALUES (@usuarioID, @dataAcesso)";
+
+            SqlCommand comando = conexao.CreateCommand();
+            comando.CommandText = sql;
+
+            comando.Parameters.AddWithValue("@usuarioID", usuario);
+            comando.Parameters.AddWithValue("@dataAcesso", dataAcesso);
+
+            int linhasAfetadas = comando.ExecuteNonQuery();
+
+            if (linhasAfetadas == 1)
+            {
+                MessageBox.Show("Dados inseridos.");
+            }
+            else
+            {
+                MessageBox.Show("Ocorreu um erro, tente novamente!");
+            }
+        }
+
+        private void submitUser_Click(object sender, EventArgs e)
+        {
+            string signUpName = nameSign.Text;
+            string signUpEmail = emailSign.Text;
+            string signUpPass = passSign.Text;
+
+            String strConexao = txbStrCon.Text;
+
+            SqlConnection conexao = new SqlConnection(strConexao);
+            conexao.Open();
+
+            SqlCommand comando = conexao.CreateCommand();
+            comando.CommandText = "INSERT INTO Usuario VALUES ('"+ signUpName +"', '"+ signUpEmail +"', '"+ signUpPass +"')";
+
+            comando.ExecuteNonQuery();
+        }
+
+        private void searchUser_Click(object sender, EventArgs e)
+        {
+            String strConexao = txbStrCon.Text;
+
+            SqlConnection conexao = new SqlConnection(strConexao);
+            conexao.Open();
+
+            SqlCommand comando = conexao.CreateCommand();
+            if (checkDel.Checked == false){
+                comando.CommandText = ("SELECT * FROM Usuario WHERE nome LIKE @nome");
+                string paramNome = ("%" + findUser.Text + "%");
+                comando.Parameters.AddWithValue("@nome", paramNome);
+                SqlDataAdapter adaptador = new SqlDataAdapter(comando);
+                DataTable dados = new DataTable();
+                adaptador.Fill(dados);
+                dgtUsers.DataSource = dados;
+            }
+            else
+            {
+                SqlTransaction transacao = conexao.BeginTransaction("delTrans");
+
+                try {
+                    comando.CommandText = ("DELETE FROM Usuario WHERE nome=@NOME AND senha=@PASS");
+                    comando.Parameters.AddWithValue("@NOME", searchUser.Text);
+                    comando.Parameters.AddWithValue("@PASS", userPass.Text);
+                    comando.Transaction = transacao;
+                    comando.ExecuteNonQuery();
+                    transacao.Commit();
+                }
+                catch (Exception ex)
+                {
+                    transacao.Rollback("delTrans");
+                    Console.WriteLine(ex);
+                }
+            }
+        }
+
+        private void dgtUsers_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+
+        }
+
+        private void checkDel_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkDel.Checked == true)
+            {
+                userPass.Enabled = true;
+            }
+            else
+            {
+                userPass.Enabled = false;
+                userPass.Text = null;
+            }
+        }
+    }
+}
