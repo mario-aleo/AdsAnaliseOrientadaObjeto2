@@ -1,0 +1,63 @@
+private void button1_Click(object sender, EventArgs e)
+        {
+            String strConexao = txbStrCon.Text;
+
+            using (SqlConnection connection = new SqlConnection(strConexao))
+            {
+                connection.Open();
+
+                SqlCommand comando = connection.CreateCommand();
+                //comando.CommandText = String.Format("select * from tb_usuario where nome like '%{0}%'", textBox1.Text);
+                comando.CommandText = ("select * from tb_usuario where nome like '%' + @nome + '%'");
+
+                comando.Parameters.AddWithValue("@nome", textBox1.Text);
+
+                SqlDataAdapter adapter = new SqlDataAdapter(comando);
+
+                DataTable data = new DataTable();
+
+                adapter.Fill(data);
+
+                dataGridView1.DataSource = data;
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            String strConexao = txbStrCon.Text;
+
+            using (SqlConnection connection = new SqlConnection(strConexao))
+            {
+                connection.Open();
+
+                SqlTransaction transaction = connection.BeginTransaction("insertUsuario");
+
+                try
+                {
+                    SqlCommand comando = connection.CreateCommand();
+
+                    comando.CommandText = ("insert into tb_usuario values(@nome, @email, @senha)");
+
+                    comando.Transaction = transaction;
+
+                    comando.Parameters.AddWithValue("@nome", insNome.Text);
+                    comando.Parameters.AddWithValue("@email", insEmail.Text);
+                    comando.Parameters.AddWithValue("@senha", insSenha.Text);
+
+                    comando.ExecuteNonQuery();
+
+                    transaction.Commit();
+
+                    MessageBox.Show("Usuario cadastrado com sucesso", "Sucesso");
+
+                    insNome.Text = null;
+                    insEmail.Text = null;
+                    insSenha.Text = null;
+                }
+                catch(Exception ex)
+                {
+                    transaction.Rollback("insertUsuario");
+                    Console.WriteLine(String.Format("Erro: {0}", ex));
+                }
+                
+            }
