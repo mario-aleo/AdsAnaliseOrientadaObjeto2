@@ -1,0 +1,6 @@
+create database AULA4
+go
+use AULA4
+go
+
+
