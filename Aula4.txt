@@ -36,7 +36,6 @@ namespace Aula4
                 table.Rows.Add(row);
             }
             return table;
-
         }
 
         private void criarSalvar_Click(object sender, EventArgs e)
