@@ -1,1 +1,341 @@
+Form1.cs
 
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using Aula4.Models;
+using Aula4.Repository;
+
+namespace Aula4
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        public DataTable ConvertToDataTable<T>(IList<T> data)
+        {
+            PropertyDescriptorCollection properties =
+               TypeDescriptor.GetProperties(typeof(T));
+            DataTable table = new DataTable();
+            foreach (PropertyDescriptor prop in properties)
+                table.Columns.Add(prop.Name, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType);
+            foreach (T item in data)
+            {
+                DataRow row = table.NewRow();
+                foreach (PropertyDescriptor prop in properties)
+                    row[prop.Name] = prop.GetValue(item) ?? DBNull.Value;
+                table.Rows.Add(row);
+            }
+            return table;
+
+        }
+
+        private void criarSalvar_Click(object sender, EventArgs e)
+        {
+            Cliente criarCliente = new Cliente();
+            ClienteRepository repository = new ClienteRepository();
+
+            if(criarNome.Text == null || criarNome.Text == "")
+            {
+                System.Windows.Forms.MessageBox.Show("Ops, faltou inserir o Nome do cliente.");
+                return;
+            }
+            else if (criarCpfCnpj.Text == null || criarCpfCnpj.Text == "")
+            {
+                System.Windows.Forms.MessageBox.Show("Ops, faltou inserir o CPF / CNPJ do cliente.");
+                return;
+            }
+            else if (criarEndereco.Text == null || criarEndereco.Text == "")
+            {
+                System.Windows.Forms.MessageBox.Show("Ops, faltou inserir o Endereço do cliente.");
+                return;
+            }
+
+            criarCliente.nome = criarNome.Text;
+            criarCliente.cpfCnpj = criarCpfCnpj.Text;
+            criarCliente.endereco = criarEndereco.Text;
+
+            string response = repository.InserirCliente(criarCliente);
+
+            if (response == "0")
+            {
+                System.Windows.Forms.MessageBox.Show("Ops, algo saiu errado, tente novamente.");
+            }
+            else
+            {
+                System.Windows.Forms.MessageBox.Show("Usuario criado com sucesso.");
+            }
+
+            return;
+        }
+
+        private void buscaBuscar_Click(object sender, EventArgs e)
+        {
+            List<Cliente> listaCliente = new List<Cliente>();
+            ClienteRepository repository = new ClienteRepository();
+
+            DataTable data = new DataTable();
+
+            listaCliente = repository.ConsultarCliente(buscaSearch.Text);
+
+            data = ConvertToDataTable(listaCliente);
+
+            buscaDataGrid.DataSource = data;
+
+            return;
+        }
+    }
+}
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+Cliente.cs
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Drawing;
+
+namespace Aula4.Models
+{
+    public class Cliente
+    {
+        public int id { get; set; }
+        public string nome { get; set; }
+        public string cpfCnpj { get; set; }
+        public string endereco { get; set; }
+        public Bitmap logo { get; set; }
+    }
+}
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+IClienteRepository.cs
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Aula4.Models;
+
+namespace Aula4.Repository
+{
+    public interface IClienteRepository
+    {
+        string InserirCliente(Cliente cliente);
+        string RemoverCliente(Cliente cliente);
+        List<Cliente> ConsultarCliente(string search);
+        string AlterarCliente(Cliente cliente);
+        List<Cliente> ConsultarTabela();
+    }
+}
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Aula4.Models;
+using Aula4.Repository;
+using System.Data;
+using System.Data.SqlClient;
+using System.Drawing;
+
+namespace Aula4.Repository
+{
+    class ClienteRepository: IClienteRepository
+    {
+        private string connectionString { get; set; }
+
+        public ClienteRepository()
+        {
+            connectionString = "Server=(local);Database=AULA4;Integrated Security=True";
+        }
+
+        public string InserirCliente(Cliente cliente)
+        {
+            string response;
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                SqlCommand comando = connection.CreateCommand();
+
+                comando.CommandText = String.Format("insert into tb_cliente values(@nome, @cpfCnpj, @endereco, @logo)");
+
+                comando.Parameters.AddWithValue("@nome", cliente.nome);
+                comando.Parameters.AddWithValue("@cpfCnpj", cliente.cpfCnpj);
+                comando.Parameters.AddWithValue("@endereco", cliente.endereco);
+                comando.Parameters.AddWithValue("@logo", new byte[0]);
+
+                try
+                {
+                    response = "1"; 
+                    comando.ExecuteNonQuery();
+                }
+                catch(SystemException e)
+                {
+                    Console.WriteLine(e);
+                    response = "0";
+                }
+            }
+
+            return response;
+        }
+
+        public string RemoverCliente(Cliente cliente)
+        {
+            string response;
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                SqlCommand comando = connection.CreateCommand();
+
+                comando.CommandText = String.Format("delete from tb_cliente where id = @id");
+
+                comando.Parameters.AddWithValue("@id", cliente.id);
+
+                try
+                {
+                    response = "1";
+                    comando.ExecuteNonQuery();
+                }
+                catch (SystemException e)
+                {
+                    Console.WriteLine(e);
+                    response = "0";
+                }
+            }
+
+            return response;
+        }
+
+        public List<Cliente> ConsultarCliente(string search)
+        {
+            Cliente clienteResponse = new Cliente();
+            List<Cliente> response = new List<Cliente>();
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                SqlCommand comando = connection.CreateCommand();
+
+                comando.CommandText = String.Format("select * from tb_cliente where nome like '%@search%' or cpfCnpj like '%@search%' or endereco like '%@search%'");
+
+                comando.Parameters.AddWithValue("@search", search);
+
+                try
+                {
+                    SqlDataReader reader = comando.ExecuteReader();
+
+                    reader = comando.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        clienteResponse.id = Convert.ToInt32(reader["id"]);
+                        clienteResponse.nome = reader["nome"].ToString();
+                        clienteResponse.cpfCnpj = reader["cpfCnpj"].ToString();
+                        clienteResponse.endereco = reader["endereco"].ToString();
+                        clienteResponse.logo = new Bitmap(reader["logo"].ToString());
+                        response.Add(clienteResponse);
+                    }
+                }
+                catch (SystemException e)
+                {
+                    Console.WriteLine(e);
+                }
+            }
+
+            return response;
+        }
+
+        public string AlterarCliente(Cliente cliente)
+        {
+            string response;
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                SqlCommand comando = connection.CreateCommand();
+
+                comando.CommandText = String.Format("update tb_cliente where id = @id values(@nome, @cpfCnpj, @endereco, @logo)");
+
+                comando.Parameters.AddWithValue("@id", cliente.id);
+                comando.Parameters.AddWithValue("@nome", cliente.nome);
+                comando.Parameters.AddWithValue("@cpfCnpj", cliente.cpfCnpj);
+                comando.Parameters.AddWithValue("@endereco", cliente.endereco);
+                comando.Parameters.AddWithValue("@logo", cliente.logo);
+
+                try
+                {
+                    response = "1";
+                    comando.ExecuteNonQuery();
+                }
+                catch (SystemException e)
+                {
+                    Console.WriteLine(e);
+                    response = "0";
+                }
+            }
+
+            return response;
+        }
+
+        public List<Cliente> ConsultarTabela()
+        {
+            Cliente cliente = new Cliente();
+            List<Cliente> response = new List<Cliente>();
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                SqlCommand comando = connection.CreateCommand();
+
+                comando.CommandText = String.Format("select * from tb_cliente (nolock)");
+
+                try
+                {
+                    SqlDataReader reader = comando.ExecuteReader();
+
+                    reader = comando.ExecuteReader();
+
+                    while(reader.Read())
+                    {
+                        cliente.id = Convert.ToInt32(reader["id"]);
+                        cliente.nome = reader["nome"].ToString();
+                        cliente.cpfCnpj = reader["cpfCnpj"].ToString();
+                        cliente.endereco = reader["endereco"].ToString();
+                        cliente.logo = new Bitmap(reader["logo"].ToString());
+                        response.Add(cliente);
+                    }
+                }
+                catch (SystemException e)
+                {
+                    Console.WriteLine(e);
+                }
+            }
+
+            return response;
+        }
+    }
+}
