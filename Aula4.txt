@@ -19,6 +19,8 @@ namespace Aula4
         public Form1()
         {
             InitializeComponent();
+
+            editarBuscarTudo();
         }
 
         public DataTable ConvertToDataTable<T>(IList<T> data)
@@ -38,30 +40,30 @@ namespace Aula4
             return table;
         }
 
-        private void criarSalvar_Click(object sender, EventArgs e)
+        private void inserirSalvarUsuario_Click(object sender, EventArgs e)
         {
             Cliente criarCliente = new Cliente();
             ClienteRepository repository = new ClienteRepository();
 
-            if(criarNome.Text == null || criarNome.Text == "")
+            if (inserirNome.Text == null || inserirNome.Text == "")
             {
                 System.Windows.Forms.MessageBox.Show("Ops, faltou inserir o Nome do cliente.");
                 return;
             }
-            else if (criarCpfCnpj.Text == null || criarCpfCnpj.Text == "")
+            else if (inserirCpfCnpj.Text == null || inserirCpfCnpj.Text == "")
             {
                 System.Windows.Forms.MessageBox.Show("Ops, faltou inserir o CPF / CNPJ do cliente.");
                 return;
             }
-            else if (criarEndereco.Text == null || criarEndereco.Text == "")
+            else if (inserirEndereco.Text == null || inserirEndereco.Text == "")
             {
                 System.Windows.Forms.MessageBox.Show("Ops, faltou inserir o Endereço do cliente.");
                 return;
             }
 
-            criarCliente.nome = criarNome.Text;
-            criarCliente.cpfCnpj = criarCpfCnpj.Text;
-            criarCliente.endereco = criarEndereco.Text;
+            criarCliente.nome = inserirNome.Text;
+            criarCliente.cpfCnpj = inserirCpfCnpj.Text;
+            criarCliente.endereco = inserirEndereco.Text;
 
             string response = repository.InserirCliente(criarCliente);
 
@@ -77,20 +79,50 @@ namespace Aula4
             return;
         }
 
-        private void buscaBuscar_Click(object sender, EventArgs e)
+        private void buscarBuscar_Click(object sender, EventArgs e)
         {
             List<Cliente> listaCliente = new List<Cliente>();
             ClienteRepository repository = new ClienteRepository();
 
             DataTable data = new DataTable();
 
-            listaCliente = repository.ConsultarCliente(buscaSearch.Text);
+            listaCliente = repository.ConsultarCliente(buscarSearch.Text);
 
             data = ConvertToDataTable(listaCliente);
 
-            buscaDataGrid.DataSource = data;
+            buscarDataGrid.DataSource = data;
 
             return;
+        }
+
+        private void editarSalvarEdicao_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void editarBuscarTudo()
+        {
+            List<Cliente> listaCliente = new List<Cliente>();
+            ClienteRepository repository = new ClienteRepository();
+
+            DataTable data = new DataTable();
+
+            listaCliente = repository.ConsultarCliente("");
+
+            data = ConvertToDataTable(listaCliente);
+
+            editarDataGrid.DataSource = data;
+
+            return;
+        }
+
+        private void editarRecarregar_Click(object sender, EventArgs e)
+        {
+            editarBuscarTudo();
+        }
+
+        private void editarDataGrid_RowHeaderMouseDoubleClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
         }
     }
 }
@@ -230,7 +262,7 @@ namespace Aula4.Repository
 
         public List<Cliente> ConsultarCliente(string search)
         {
-            Cliente clienteResponse = new Cliente();
+            Cliente cliente = new Cliente();
             List<Cliente> response = new List<Cliente>();
 
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -239,9 +271,7 @@ namespace Aula4.Repository
 
                 SqlCommand comando = connection.CreateCommand();
 
-                comando.CommandText = String.Format("select * from tb_cliente where nome like '%@search%' or cpfCnpj like '%@search%' or endereco like '%@search%'");
-
-                comando.Parameters.AddWithValue("@search", search);
+                comando.CommandText = String.Format("select * from tb_cliente (nolock)");
 
                 try
                 {
@@ -251,12 +281,12 @@ namespace Aula4.Repository
 
                     while (reader.Read())
                     {
-                        clienteResponse.id = Convert.ToInt32(reader["id"]);
-                        clienteResponse.nome = reader["nome"].ToString();
-                        clienteResponse.cpfCnpj = reader["cpfCnpj"].ToString();
-                        clienteResponse.endereco = reader["endereco"].ToString();
-                        clienteResponse.logo = new Bitmap(reader["logo"].ToString());
-                        response.Add(clienteResponse);
+                        cliente.id = Convert.ToInt32(reader["id"]);
+                        cliente.nome = reader["nome"].ToString();
+                        cliente.cpfCnpj = reader["cpfCnpj"].ToString();
+                        cliente.endereco = reader["endereco"].ToString();
+                        cliente.logo = new Bitmap(reader["logo"].ToString());
+                        response.Add(cliente);
                     }
                 }
                 catch (SystemException e)
