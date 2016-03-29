@@ -1,14 +1,13 @@
 create database AULA4
 go
+
 use AULA4
 go
 
-
 create table tb_cliente(
 	id int not null identity primary key,
-	cpfCnpj varchar(14) not null,
 	nome varchar(100) not null,
-
+	cpfCnpj varchar(14) not null,
 	endereco varchar(100) not null,
 	logo varbinary(1024)
 );
