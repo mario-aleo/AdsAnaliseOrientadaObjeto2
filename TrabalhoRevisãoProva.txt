@@ -1,0 +1,44 @@
+Classes de um sistema operacional mobile Android.
+
+Classe:   RedeTelefonica
+Atributo: nomeRedeFornecedora
+Atributo: qualidadeConexao
+Atributo: tempoConectado
+Função:   Conectar
+Função:   Desconectar
+Função:   AlterarRedeFornecedora
+
+Classe:   RedeDados
+Atributo: nomeRedeFornecedora
+Atributo: qualidadeConexao
+Atributo: tempoConectado
+Atributo: tipoConexao
+Atributo: quantidadeDadosUsados
+Função:   Conectar
+Função:   Desconectar
+Função:   AlterarRedeFornecedora
+Função:   DefinirQuantidadeDadosLimite
+
+Classe:   RedeWifi
+Atributo: nomeRede
+Atributo: qualidadeConexao
+Atributo: tempoConectado
+Atributo: senhaRede
+Atributo: quantidadeDadosUsados
+Função:   Conectar
+Função:   Desconectar
+Função:   Esquecer
+
+Classe:   Brilho
+Atributo: intensidade
+Atributo: alteracaoAutomatica
+Função:   AlterarIntensidade
+Função:   HabilitarAlteracaoAutomatica
+Função:   DesabilitarAlteracaoAutomatica
+
+Classe:   Audio
+Atributo: volume
+Atributo: origemAudio
+Função:   AlterarVolume
+Função:   MutarVolume
+Função:   DesmutarVolume
